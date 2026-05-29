@@ -6,217 +6,84 @@
 <title>Ballard Center — Relationship Map</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-:root {
-  --green-900: #1a3a1c;
-  --green-800: #2c5f2e;
-  --green-700: #3a7d3c;
-  --green-200: #c8e6c9;
-  --green-100: #e8f5e9;
-  --green-50:  #f4faf4;
-  --sand-100:  #f5f0e8;
-  --sand-200:  #e8e0d0;
-  --text-main: #1a2b1b;
-  --text-mid:  #4a6250;
-  --text-muted:#7a9280;
-  --white:     #ffffff;
-  --shadow:    0 2px 12px rgba(0,0,0,0.08);
-  --radius:    10px;
+:root{
+  --green-900:#1a3a1c;--green-800:#2c5f2e;--green-700:#3a7d3c;
+  --green-200:#c8e6c9;--green-100:#e8f5e9;--green-50:#f4faf4;
+  --sand-100:#f5f0e8;--sand-200:#e8e0d0;
+  --text-main:#1a2b1b;--text-mid:#4a6250;--text-muted:#7a9280;
+  --white:#ffffff;--shadow:0 2px 12px rgba(0,0,0,0.08);--radius:10px;
 }
-
 html,body{height:100%;overflow:hidden;background:var(--sand-100);font-family:'DM Sans',sans-serif;color:var(--text-main)}
-
-/* ── Layout ── */
 #app{display:flex;height:100vh;width:100vw}
-
-/* ── Sidebar ── */
-#sidebar{
-  width:260px;min-width:260px;
-  background:var(--green-900);
-  display:flex;flex-direction:column;
-  padding:0;overflow:hidden;
-  border-right:2px solid var(--green-800);
-}
-
-#sidebar-header{
-  padding:20px 18px 14px;
-  border-bottom:1px solid rgba(255,255,255,0.08);
-}
-#sidebar-header .logo{
-  font-family:'Lora',serif;
-  font-size:1.1rem;font-weight:700;
-  color:#fff;letter-spacing:0.01em;
-  line-height:1.2;margin-bottom:4px;
-}
-#sidebar-header .tagline{
-  font-size:0.68rem;color:rgba(255,255,255,0.45);
-  font-weight:300;letter-spacing:0.04em;text-transform:uppercase;
-}
-
-#semester-label{
-  padding:14px 18px 8px;
-  font-size:0.65rem;color:rgba(255,255,255,0.4);
-  letter-spacing:0.08em;text-transform:uppercase;font-weight:500;
-}
-
-#semester-list{
-  flex:1;overflow-y:auto;padding:0 10px 10px;
-  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent;
-}
-
-.sem-item{
-  display:flex;align-items:center;
-  padding:10px 10px;margin-bottom:4px;
-  border-radius:8px;cursor:pointer;
-  border:1px solid transparent;
-  transition:all 0.15s ease;
-  user-select:none;
-  position:relative;
-}
+#sidebar{width:260px;min-width:260px;background:var(--green-900);display:flex;flex-direction:column;padding:0;overflow:hidden;border-right:2px solid var(--green-800)}
+#sidebar-header{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.08)}
+#sidebar-header .logo{font-family:'Lora',serif;font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:0.01em;line-height:1.2;margin-bottom:4px}
+#sidebar-header .tagline{font-size:0.68rem;color:rgba(255,255,255,0.45);font-weight:300;letter-spacing:0.04em;text-transform:uppercase}
+#semester-label{padding:14px 18px 8px;font-size:0.65rem;color:rgba(255,255,255,0.4);letter-spacing:0.08em;text-transform:uppercase;font-weight:500}
+#semester-list{flex:1;overflow-y:auto;padding:0 10px 10px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+.sem-item{display:flex;align-items:center;padding:10px 10px;margin-bottom:4px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all 0.15s ease;user-select:none;position:relative}
 .sem-item:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.1)}
 .sem-item.active{background:var(--green-700);border-color:rgba(255,255,255,0.15)}
 .sem-item.dragging{opacity:0.4}
 .sem-item.drag-over{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.12)}
-
-.drag-handle{
-  font-size:14px;color:rgba(255,255,255,0.25);
-  margin-right:8px;cursor:grab;flex-shrink:0;
-  line-height:1;
-}
+.drag-handle{font-size:14px;color:rgba(255,255,255,0.25);margin-right:8px;cursor:grab;flex-shrink:0;line-height:1}
 .drag-handle:active{cursor:grabbing}
-
 .sem-info{flex:1;min-width:0}
 .sem-name{font-size:0.82rem;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sem-meta{font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:1px}
-
-.sem-delete{
-  opacity:0;font-size:14px;color:rgba(255,255,255,0.35);
-  background:none;border:none;cursor:pointer;padding:2px 4px;
-  border-radius:4px;transition:all 0.15s;flex-shrink:0;
-}
-.sem-item:hover .sem-delete{opacity:1}
-.sem-delete:hover{color:#f87171;background:rgba(248,113,113,0.12)}
-
-/* ── Upload zone ── */
-#upload-zone{
-  margin:10px;
-  border:1.5px dashed rgba(255,255,255,0.18);
-  border-radius:var(--radius);
-  padding:14px 12px;
-  text-align:center;
-  cursor:pointer;
-  transition:all 0.2s;
-  position:relative;
-}
-#upload-zone:hover,#upload-zone.drag-active{
-  border-color:rgba(255,255,255,0.5);
-  background:rgba(255,255,255,0.06);
-}
+.sem-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity 0.15s}
+.sem-item:hover .sem-actions{opacity:1}
+.sem-btn{font-size:12px;color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer;padding:3px 5px;border-radius:4px;transition:all 0.15s;line-height:1}
+.sem-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.sem-btn.del:hover{color:#f87171;background:rgba(248,113,113,0.12)}
+#upload-zone{margin:10px;border:1.5px dashed rgba(255,255,255,0.18);border-radius:var(--radius);padding:14px 12px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative}
+#upload-zone:hover,#upload-zone.drag-active{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.06)}
 #upload-zone .up-icon{font-size:22px;color:rgba(255,255,255,0.35);margin-bottom:6px}
 #upload-zone .up-text{font-size:0.74rem;color:rgba(255,255,255,0.5);line-height:1.4}
 #upload-zone .up-hint{font-size:0.65rem;color:rgba(255,255,255,0.28);margin-top:4px}
 #csv-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-
-/* ── Main area ── */
+#sync-status{padding:8px 14px;font-size:0.65rem;text-align:center;color:rgba(255,255,255,0.3);border-top:1px solid rgba(255,255,255,0.06)}
+#sync-status.syncing{color:#fbbf24}
+#sync-status.error{color:#f87171}
+#sync-status.ok{color:#6ee7b7}
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-
-/* ── Top bar ── */
-#topbar{
-  height:52px;background:var(--white);
-  display:flex;align-items:center;gap:12px;
-  padding:0 20px;
-  border-bottom:1px solid var(--sand-200);
-  flex-shrink:0;
-}
-#current-title{
-  font-family:'Lora',serif;font-size:1rem;font-weight:600;
-  color:var(--text-main);flex:1;
-}
+#topbar{height:52px;background:var(--white);display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--sand-200);flex-shrink:0}
+#current-title{font-family:'Lora',serif;font-size:1rem;font-weight:600;color:var(--text-main);flex:1}
 #breadcrumb{font-size:0.78rem;color:var(--text-mid)}
 #breadcrumb a{color:var(--green-700);text-decoration:none;font-weight:500}
 #breadcrumb a:hover{text-decoration:underline}
-
-#back-btn{
-  display:none;
-  background:var(--green-100);color:var(--green-800);
-  border:1px solid var(--green-200);
-  border-radius:20px;padding:5px 14px;
-  font-size:0.78rem;font-family:'DM Sans',sans-serif;
-  cursor:pointer;font-weight:500;
-  transition:all 0.15s;
-}
+#back-btn{display:none;background:var(--green-100);color:var(--green-800);border:1px solid var(--green-200);border-radius:20px;padding:5px 14px;font-size:0.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:500;transition:all 0.15s}
 #back-btn:hover{background:var(--green-200)}
-
-/* ── Chart area ── */
 #chart-wrapper{flex:1;position:relative;overflow:hidden}
 #chart{width:100%;height:100%}
-
-/* ── Legend ── */
-#legend{
-  position:absolute;bottom:20px;right:20px;
-  background:rgba(255,255,255,0.95);
-  border:1px solid var(--sand-200);
-  border-radius:var(--radius);
-  padding:12px 16px;
-  font-size:0.72rem;color:var(--text-main);
-  box-shadow:var(--shadow);
-  pointer-events:none;
-  min-width:170px;
-}
-#legend h3{
-  font-family:'Lora',serif;font-size:0.78rem;
-  color:var(--green-800);margin-bottom:8px;font-weight:600;
-}
+#legend{position:absolute;bottom:20px;right:20px;background:rgba(255,255,255,0.95);border:1px solid var(--sand-200);border-radius:var(--radius);padding:12px 16px;font-size:0.72rem;color:var(--text-main);box-shadow:var(--shadow);pointer-events:none;min-width:170px;display:none}
+#legend h3{font-family:'Lora',serif;font-size:0.78rem;color:var(--green-800);margin-bottom:8px;font-weight:600}
 .leg-row{display:flex;align-items:center;gap:7px;margin:4px 0}
 .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .leg-sec{margin-top:8px;font-weight:500;color:var(--text-mid);font-size:0.7rem}
 .leg-note{color:var(--text-muted);margin:3px 0}
-
-/* ── Empty state ── */
-#empty-state{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:16px;pointer-events:none;
-}
+#empty-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:none}
 #empty-state .es-icon{font-size:56px;opacity:0.12}
 #empty-state .es-title{font-family:'Lora',serif;font-size:1.4rem;font-weight:600;color:var(--text-mid)}
 #empty-state .es-sub{font-size:0.85rem;color:var(--text-muted);text-align:center;max-width:320px;line-height:1.6}
-
-/* ── Rename modal ── */
-#rename-modal{
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,0.4);z-index:9999;
-  align-items:center;justify-content:center;
-}
+#rename-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center}
 #rename-modal.open{display:flex}
-#rename-box{
-  background:#fff;border-radius:12px;padding:24px;
-  width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.15);
-}
+#rename-box{background:#fff;border-radius:12px;padding:24px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
 #rename-box h4{font-family:'Lora',serif;font-size:1rem;margin-bottom:14px;color:var(--text-main)}
-#rename-input{
-  width:100%;border:1px solid var(--sand-200);border-radius:8px;
-  padding:9px 12px;font-size:0.9rem;font-family:'DM Sans',sans-serif;
-  outline:none;color:var(--text-main);
-}
+#rename-input{width:100%;border:1px solid var(--sand-200);border-radius:8px;padding:9px 12px;font-size:0.9rem;font-family:'DM Sans',sans-serif;outline:none;color:var(--text-main)}
 #rename-input:focus{border-color:var(--green-700);box-shadow:0 0 0 3px rgba(58,125,60,0.15)}
 #rename-btns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
-.modal-btn{
-  padding:7px 18px;border-radius:8px;font-size:0.82rem;
-  font-family:'DM Sans',sans-serif;cursor:pointer;border:none;font-weight:500;
-}
+.modal-btn{padding:7px 18px;border-radius:8px;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;font-weight:500}
 .modal-btn.cancel{background:var(--sand-100);color:var(--text-mid)}
 .modal-btn.save{background:var(--green-800);color:#fff}
 .modal-btn.save:hover{background:var(--green-700)}
 </style>
 </head>
 <body>
-
 <div id="app">
-
-  <!-- Sidebar -->
   <div id="sidebar">
     <div id="sidebar-header">
       <div class="logo">Ballard Center</div>
@@ -230,9 +97,8 @@ html,body{height:100%;overflow:hidden;background:var(--sand-100);font-family:'DM
       <div class="up-text">Upload CSV<br>to add semester</div>
       <div class="up-hint">Drag & drop supported</div>
     </div>
+    <div id="sync-status">Connecting...</div>
   </div>
-
-  <!-- Main -->
   <div id="main">
     <div id="topbar">
       <div id="current-title">No semester loaded</div>
@@ -244,9 +110,9 @@ html,body{height:100%;overflow:hidden;background:var(--sand-100);font-family:'DM
       <div id="empty-state">
         <div class="es-icon">🗺</div>
         <div class="es-title">No data yet</div>
-        <div class="es-sub">Upload a CSV from your CRM to see the relationship map for a semester. Drag semesters in the sidebar to reorder.</div>
+        <div class="es-sub">Upload a CSV from your CRM to see the relationship map. All uploads are shared with your whole team instantly.</div>
       </div>
-      <div id="legend" style="display:none">
+      <div id="legend">
         <h3>Visual Key</h3>
         <div class="leg-sec">Warmth</div>
         <div class="leg-row"><div class="leg-dot" style="background:#c0392b"></div>Core Relationship</div>
@@ -264,7 +130,6 @@ html,body{height:100%;overflow:hidden;background:var(--sand-100);font-family:'DM
   </div>
 </div>
 
-<!-- Rename modal -->
 <div id="rename-modal">
   <div id="rename-box">
     <h4>Rename semester</h4>
@@ -277,31 +142,49 @@ html,body{height:100%;overflow:hidden;background:var(--sand-100);font-family:'DM
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════
-// State
-// ════════════════════════════════════════════════════════
-let semesters = JSON.parse(localStorage.getItem('bc_semesters') || '[]');
-// Each: { id, name, uploadedAt, data: parsedRows }
+// ── Supabase ──────────────────────────────────────────
+const SUPABASE_URL  = 'https://snstxkngzhmiwvmazkej.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNuc3R4a25nemhtaXd2bWF6a2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMTAyMTIsImV4cCI6MjA5NTU4NjIxMn0.UsO3W2SK7931EULYim1rPtQb-f9yM-MQ6m7JteMP3Vw';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── State ─────────────────────────────────────────────
+let semesters = [];
 let activeSemId = null;
 let renameTarget = null;
 let dragSrcIdx = null;
+let currentRows = null;
+let currentCollege = null;
 
 const MIN_PX = 22, MAX_PX = 90;
 
-// ════════════════════════════════════════════════════════
-// Persist
-// ════════════════════════════════════════════════════════
-function save() {
-  try { localStorage.setItem('bc_semesters', JSON.stringify(semesters)); } catch(e){}
+// ── Status indicator ──────────────────────────────────
+function setStatus(msg, type='') {
+  const el = document.getElementById('sync-status');
+  el.textContent = msg;
+  el.className = type;
 }
 
-// ════════════════════════════════════════════════════════
-// CSV Parsing  (matches R column order)
-// ════════════════════════════════════════════════════════
+// ── Load all semesters from Supabase ──────────────────
+async function loadFromDB() {
+  setStatus('Syncing...','syncing');
+  const { data, error } = await db.from('semesters').select('*').order('uploaded_at', {ascending:true});
+  if (error) { setStatus('Sync error','error'); console.error(error); return; }
+  semesters = data || [];
+  setStatus(`${semesters.length} semester${semesters.length!==1?'s':''} synced`,'ok');
+  renderList();
+  if (semesters.length && !activeSemId) loadSem(semesters[semesters.length-1].id);
+}
+
+// ── Real-time subscription ────────────────────────────
+db.channel('semesters-changes')
+  .on('postgres_changes', {event:'*', schema:'public', table:'semesters'}, () => loadFromDB())
+  .subscribe();
+
+// ── CSV Parsing ───────────────────────────────────────
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  // Skip header row
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = splitCSVLine(lines[i]);
@@ -309,339 +192,182 @@ function parseCSV(text) {
     const org = (cols[0]||'').trim();
     if (!org || org === 'Ballard Center') continue;
     rows.push({
-      org,
-      legal:                (cols[1]||'').trim(),
-      rel_rating:           (cols[2]||'').trim(),
-      most_recent_outreach: (cols[3]||'').trim(),
+      org, legal:(cols[1]||'').trim(),
+      rel_rating:(cols[2]||'').trim(),
+      most_recent_outreach:(cols[3]||'').trim(),
       most_recent_engagement:(cols[4]||'').trim(),
-      total_engagements:    parseInt(cols[5])||0,
-      total_outreaches:     parseInt(cols[6])||0,
-      semesters_worked:     cols[7]||'',
-      byu_college:          (cols[8]||'').trim(),
-      byu_type:             (cols[9]||'').trim(),
+      total_engagements:parseInt(cols[5])||0,
+      total_outreaches:parseInt(cols[6])||0,
+      semesters_worked:cols[7]||'',
+      byu_college:(cols[8]||'').trim(),
+      byu_type:(cols[9]||'').trim(),
     });
   }
   return rows;
 }
 
 function splitCSVLine(line) {
-  const result = [];
-  let cur = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') { inQ = !inQ; continue; }
-    if (c === ',' && !inQ) { result.push(cur); cur = ''; continue; }
-    cur += c;
+  const result=[]; let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){inQ=!inQ;continue;}
+    if(c===','&&!inQ){result.push(cur);cur='';continue;}
+    cur+=c;
   }
   result.push(cur);
   return result;
 }
 
 function parseDate(s) {
-  if (!s) return null;
-  const m = s.match(/([A-Za-z]+)\s+(\d+),\s*(\d{4})/);
-  if (!m) return null;
+  if(!s) return null;
+  const m=s.match(/([A-Za-z]+)\s+(\d+),\s*(\d{4})/);
+  if(!m) return null;
   return new Date(`${m[1]} ${m[2]}, ${m[3]}`);
 }
 
-// ════════════════════════════════════════════════════════
-// Data transforms (mirrors R logic)
-// ════════════════════════════════════════════════════════
-function warmth(row) {
-  const m = (row.rel_rating||'').match(/(\d+)/);
-  return m ? parseInt(m[1]) : 0;
+// ── Data transforms ───────────────────────────────────
+function warmth(row){const m=(row.rel_rating||'').match(/(\d+)/);return m?parseInt(m[1]):0;}
+function warmthColor(w){if(w>=5)return'#c0392b';if(w>=4)return'#e67e22';if(w>=3)return'#f1c40f';return'#85a9c5';}
+function warmthLabel(w){if(w>=5)return'Core Relationship';if(w>=4)return'Warm';if(w>=3)return'Lukewarm';return'Cold – No Contact';}
+function edgeBucket(row){
+  const d1=parseDate(row.most_recent_outreach),d2=parseDate(row.most_recent_engagement);
+  const last=d1&&d2?(d1>d2?d1:d2):(d1||d2);
+  if(!last) return 4;
+  const days=(Date.now()-last.getTime())/86400000;
+  if(days>365)return 3;if(days>180)return 2;return 1;
 }
-function warmthColor(w) {
-  if (w >= 5) return '#c0392b';
-  if (w >= 4) return '#e67e22';
-  if (w >= 3) return '#f1c40f';
-  return '#85a9c5';
-}
-function warmthLabel(w) {
-  if (w >= 5) return 'Core Relationship';
-  if (w >= 4) return 'Warm';
-  if (w >= 3) return 'Lukewarm';
-  return 'Cold – No Contact';
-}
-function edgeBucket(row) {
-  const d1 = parseDate(row.most_recent_outreach);
-  const d2 = parseDate(row.most_recent_engagement);
-  const last = d1 && d2 ? (d1>d2?d1:d2) : (d1||d2);
-  if (!last) return 4;
-  const days = (Date.now() - last.getTime()) / 86400000;
-  if (days > 365) return 3;
-  if (days > 180) return 2;
-  return 1;
-}
-function lastContactStr(row) {
-  const d1 = parseDate(row.most_recent_outreach);
-  const d2 = parseDate(row.most_recent_engagement);
-  const last = d1 && d2 ? (d1>d2?d1:d2) : (d1||d2);
-  if (!last) return 'Unknown';
+function lastContactStr(row){
+  const d1=parseDate(row.most_recent_outreach),d2=parseDate(row.most_recent_engagement);
+  const last=d1&&d2?(d1>d2?d1:d2):(d1||d2);
+  if(!last)return'Unknown';
   return last.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
-function colGroup(row) {
-  if (row.byu_college && row.byu_college !== '') return row.byu_college;
-  if (row.byu_type === 'Center') return 'Campus Centers & Offices';
-  return 'Other / Unassigned';
+function colGroup(row){
+  if(row.byu_college&&row.byu_college!=='')return row.byu_college;
+  if(row.byu_type==='Center')return'Campus Centers & Offices';
+  return'Other / Unassigned';
 }
-function scaleSz(x, refMax) {
-  const p = Math.pow(x, 1.5);
-  const pmax = Math.pow(refMax, 1.5) || 1;
-  return Math.max(MIN_PX, MIN_PX + (p/pmax)*(MAX_PX-MIN_PX));
+function scaleSz(x,refMax){
+  const p=Math.pow(x,1.5),pmax=Math.pow(refMax,1.5)||1;
+  return Math.max(MIN_PX,MIN_PX+(p/pmax)*(MAX_PX-MIN_PX));
 }
 
-// ════════════════════════════════════════════════════════
-// FR Layout  (simple spring-like layout in JS)
-// ════════════════════════════════════════════════════════
-function frLayout(nodes, edges) {
-  const n = nodes.length;
-  if (n === 0) return nodes;
-  // init positions in a circle
-  nodes.forEach((nd,i) => {
-    nd.x = Math.cos(2*Math.PI*i/n) * 3 + (Math.random()-0.5)*0.5;
-    nd.y = Math.sin(2*Math.PI*i/n) * 3 + (Math.random()-0.5)*0.5;
-  });
-
-  const adjMap = {};
-  nodes.forEach(nd=>{ adjMap[nd.name]=new Set(); });
-  edges.forEach(e=>{
-    if(adjMap[e.from]) adjMap[e.from].add(e.to);
-    if(adjMap[e.to])   adjMap[e.to].add(e.from);
-  });
-
-  const k = Math.sqrt(20/n);
-  for (let iter = 0; iter < 200; iter++) {
-    const disp = nodes.map(()=>({x:0,y:0}));
-    // repulsion
-    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++) {
-      let dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
-      let d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      let f=k*k/d;
-      disp[i].x+=dx/d*f; disp[i].y+=dy/d*f;
-      disp[j].x-=dx/d*f; disp[j].y-=dy/d*f;
+// ── FR Layout ─────────────────────────────────────────
+function frLayout(nodes,edges){
+  const n=nodes.length;if(!n)return nodes;
+  nodes.forEach((nd,i)=>{nd.x=Math.cos(2*Math.PI*i/n)*3+(Math.random()-0.5)*0.5;nd.y=Math.sin(2*Math.PI*i/n)*3+(Math.random()-0.5)*0.5;});
+  const k=Math.sqrt(20/n);
+  for(let iter=0;iter<200;iter++){
+    const disp=nodes.map(()=>({x:0,y:0}));
+    for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+      let dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy)||0.01,f=k*k/d;
+      disp[i].x+=dx/d*f;disp[i].y+=dy/d*f;disp[j].x-=dx/d*f;disp[j].y-=dy/d*f;
     }
-    // attraction
     edges.forEach(e=>{
-      const ni=nodes.findIndex(nd=>nd.name===e.from);
-      const nj=nodes.findIndex(nd=>nd.name===e.to);
-      if(ni<0||nj<0) return;
-      let dx=nodes[ni].x-nodes[nj].x, dy=nodes[ni].y-nodes[nj].y;
-      let d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      let f=d*d/k;
-      disp[ni].x-=dx/d*f; disp[ni].y-=dy/d*f;
-      disp[nj].x+=dx/d*f; disp[nj].y+=dy/d*f;
+      const ni=nodes.findIndex(nd=>nd.name===e.from),nj=nodes.findIndex(nd=>nd.name===e.to);
+      if(ni<0||nj<0)return;
+      let dx=nodes[ni].x-nodes[nj].x,dy=nodes[ni].y-nodes[nj].y,d=Math.sqrt(dx*dx+dy*dy)||0.01,f=d*d/k;
+      disp[ni].x-=dx/d*f;disp[ni].y-=dy/d*f;disp[nj].x+=dx/d*f;disp[nj].y+=dy/d*f;
     });
     const temp=1.5*(1-iter/200);
-    nodes.forEach((nd,i)=>{
-      const d=Math.sqrt(disp[i].x**2+disp[i].y**2)||0.01;
-      nd.x+=disp[i].x/d*Math.min(d,temp);
-      nd.y+=disp[i].y/d*Math.min(d,temp);
-    });
+    nodes.forEach((nd,i)=>{const d=Math.sqrt(disp[i].x**2+disp[i].y**2)||0.01;nd.x+=disp[i].x/d*Math.min(d,temp);nd.y+=disp[i].y/d*Math.min(d,temp);});
   }
   return nodes;
 }
 
-// ════════════════════════════════════════════════════════
-// Build Plotly data for a given semester rows
-// ════════════════════════════════════════════════════════
-function buildCollegeView(rows) {
-  const maxEng = Math.max(...rows.map(r=>r.total_engagements), 1);
-
-  // Group by college
-  const groups = {};
+// ── Build views ───────────────────────────────────────
+function buildCollegeView(rows){
+  const groups={};
   rows.forEach(r=>{
-    const cg = colGroup(r);
-    if (!groups[cg]) groups[cg]={rows:[],maxW:0,bestEdge:4};
+    const cg=colGroup(r);
+    if(!groups[cg])groups[cg]={rows:[],maxW:0,bestEdge:4};
     groups[cg].rows.push(r);
-    const w=warmth(r);
-    if(w>groups[cg].maxW) groups[cg].maxW=w;
-    const eb=edgeBucket(r);
-    if(eb<groups[cg].bestEdge) groups[cg].bestEdge=eb;
+    const w=warmth(r);if(w>groups[cg].maxW)groups[cg].maxW=w;
+    const eb=edgeBucket(r);if(eb<groups[cg].bestEdge)groups[cg].bestEdge=eb;
   });
-
-  const cgNames = Object.keys(groups);
-  const cgMaxEng = Math.max(...cgNames.map(cg=>groups[cg].rows.reduce((s,r)=>s+r.total_engagements,0)),1);
-
-  let nodes = [{
-    name:'Ballard Center',
-    totalEng:0, totalOut:0,
-    ptSize:MAX_PX, fillColor:'#2c5f2e',
-    bubbleLabel:'BC',
-    hoverText:'<b>Ballard Center</b><br>Central Hub',
-    customdata:'Ballard Center'
-  }];
-
-  const edges = [];
+  const cgNames=Object.keys(groups);
+  const cgMaxEng=Math.max(...cgNames.map(cg=>groups[cg].rows.reduce((s,r)=>s+r.total_engagements,0)),1);
+  let nodes=[{name:'Ballard Center',ptSize:MAX_PX,fillColor:'#2c5f2e',bubbleLabel:'BC',hoverText:'<b>Ballard Center</b><br>Central Hub',customdata:'Ballard Center'}];
+  const edges=[];
   cgNames.forEach(cg=>{
     const g=groups[cg];
     const totalEng=g.rows.reduce((s,r)=>s+r.total_engagements,0);
     const totalOut=g.rows.reduce((s,r)=>s+r.total_outreaches,0);
-    const wl=warmthLabel(g.maxW);
-    nodes.push({
-      name:cg,
-      totalEng, totalOut,
-      ptSize:scaleSz(totalEng,cgMaxEng),
-      fillColor:warmthColor(g.maxW),
-      bubbleLabel:String(totalOut),
-      hoverText:`<b>${cg}</b><br>Outreaches: ${totalOut}<br>Engagements: ${totalEng}<br>Departments: ${g.rows.length}<br>Warmth: ${wl}<br><i>Click to explore departments</i>`,
-      customdata:cg
-    });
+    nodes.push({name:cg,ptSize:scaleSz(totalEng,cgMaxEng),fillColor:warmthColor(g.maxW),bubbleLabel:String(totalOut),hoverText:`<b>${cg}</b><br>Outreaches: ${totalOut}<br>Engagements: ${totalEng}<br>Departments: ${g.rows.length}<br>Warmth: ${warmthLabel(g.maxW)}<br><i>Click to explore departments</i>`,customdata:cg});
     edges.push({from:'Ballard Center',to:cg,eb:g.bestEdge});
   });
-
-  frLayout(nodes, edges);
-  return {nodes, edges, groups};
+  frLayout(nodes,edges);
+  return{nodes,edges,groups};
 }
 
-function buildDeptView(rows, collegeName) {
-  const deptRows = rows.filter(r=>colGroup(r)===collegeName);
-  if(!deptRows.length) return null;
+function buildDeptView(rows,collegeName){
+  const deptRows=rows.filter(r=>colGroup(r)===collegeName);
+  if(!deptRows.length)return null;
   const maxEng=Math.max(...rows.map(r=>r.total_engagements),1);
-
-  const cgEng=deptRows.reduce((s,r)=>s+r.total_engagements,0);
-  const cgOut=deptRows.reduce((s,r)=>s+r.total_outreaches,0);
   const cgMaxW=Math.max(...deptRows.map(r=>warmth(r)));
-
-  let nodes=[{
-    name:collegeName,
-    ptSize:MAX_PX*0.7,
-    fillColor:warmthColor(cgMaxW),
-    bubbleLabel:String(cgOut),
-    hoverText:`<b>${collegeName}</b><br>College hub`,
-    customdata:collegeName
-  }];
+  const cgOut=deptRows.reduce((s,r)=>s+r.total_outreaches,0);
+  let nodes=[{name:collegeName,ptSize:MAX_PX*0.7,fillColor:warmthColor(cgMaxW),bubbleLabel:String(cgOut),hoverText:`<b>${collegeName}</b><br>College hub`,customdata:collegeName}];
   const edges=[];
   deptRows.forEach(r=>{
-    nodes.push({
-      name:r.org,
-      ptSize:scaleSz(r.total_engagements,maxEng),
-      fillColor:warmthColor(warmth(r)),
-      bubbleLabel:String(r.total_outreaches),
-      hoverText:`<b>${r.org}</b><br>Outreaches: ${r.total_outreaches}<br>Engagements: ${r.total_engagements}<br>Warmth: ${warmthLabel(warmth(r))}<br>Last Contact: ${lastContactStr(r)}`,
-      customdata:r.org
-    });
+    nodes.push({name:r.org,ptSize:scaleSz(r.total_engagements,maxEng),fillColor:warmthColor(warmth(r)),bubbleLabel:String(r.total_outreaches),hoverText:`<b>${r.org}</b><br>Outreaches: ${r.total_outreaches}<br>Engagements: ${r.total_engagements}<br>Warmth: ${warmthLabel(warmth(r))}<br>Last Contact: ${lastContactStr(r)}`,customdata:r.org});
     edges.push({from:collegeName,to:r.org,eb:edgeBucket(r)});
   });
-
-  frLayout(nodes, edges);
-  return {nodes, edges};
+  frLayout(nodes,edges);
+  return{nodes,edges};
 }
 
-// ════════════════════════════════════════════════════════
-// Build Plotly traces from nodes+edges
-// ════════════════════════════════════════════════════════
-function buildTraces(nodes, edges) {
+function buildTraces(nodes,edges){
   const traces=[];
   const ebGroups={};
-  edges.forEach(e=>{
-    if(!ebGroups[e.eb]) ebGroups[e.eb]=[];
-    ebGroups[e.eb].push(e);
-  });
-  const widths=[null,3.5,2,1,0.4];
-  const opacs=[null,0.85,0.55,0.30,0.15];
-  const dashes=[null,'solid','solid','dot','dot'];
-  const byName={};
-  nodes.forEach(nd=>{byName[nd.name]=nd;});
-
+  edges.forEach(e=>{if(!ebGroups[e.eb])ebGroups[e.eb]=[];ebGroups[e.eb].push(e);});
+  const widths=[null,3.5,2,1,0.4],opacs=[null,0.85,0.55,0.30,0.15],dashes=[null,'solid','solid','dot','dot'];
+  const byName={};nodes.forEach(nd=>{byName[nd.name]=nd;});
   Object.keys(ebGroups).forEach(eb=>{
-    const ex=[], ey=[];
-    ebGroups[eb].forEach(e=>{
-      const a=byName[e.from], b=byName[e.to];
-      if(!a||!b) return;
-      ex.push(a.x,b.x,null); ey.push(a.y,b.y,null);
-    });
-    traces.push({type:'scatter',mode:'lines',x:ex,y:ey,
-      line:{color:'#7a9e7e',width:widths[eb],dash:dashes[eb]},
-      opacity:opacs[eb],hoverinfo:'none',showlegend:false});
+    const ex=[],ey=[];
+    ebGroups[eb].forEach(e=>{const a=byName[e.from],b=byName[e.to];if(!a||!b)return;ex.push(a.x,b.x,null);ey.push(a.y,b.y,null);});
+    traces.push({type:'scatter',mode:'lines',x:ex,y:ey,line:{color:'#7a9e7e',width:widths[eb],dash:dashes[eb]},opacity:opacs[eb],hoverinfo:'none',showlegend:false});
   });
-
-  traces.push({
-    type:'scatter',mode:'markers+text',
-    x:nodes.map(n=>n.x), y:nodes.map(n=>n.y),
-    text:nodes.map(n=>n.bubbleLabel),
-    textposition:'middle center',
-    textfont:{size:nodes.map(n=>Math.max(9,Math.min(15,n.ptSize/6))),color:'white',family:'Georgia,serif'},
-    marker:{size:nodes.map(n=>n.ptSize),color:nodes.map(n=>n.fillColor),line:{color:'white',width:2},opacity:0.92},
-    customdata:nodes.map(n=>n.customdata),
-    hovertext:nodes.map(n=>n.hoverText),
-    hoverinfo:'text',showlegend:false
-  });
-  traces.push({
-    type:'scatter',mode:'text',
-    x:nodes.map(n=>n.x), y:nodes.map(n=>n.y),
-    text:nodes.map(n=>n.name),
-    textposition:'bottom center',
-    textfont:{size:9,color:'#2c3e2d',family:'DM Sans,sans-serif'},
-    hoverinfo:'none',showlegend:false
-  });
+  traces.push({type:'scatter',mode:'markers+text',x:nodes.map(n=>n.x),y:nodes.map(n=>n.y),text:nodes.map(n=>n.bubbleLabel),textposition:'middle center',textfont:{size:nodes.map(n=>Math.max(9,Math.min(15,n.ptSize/6))),color:'white',family:'Georgia,serif'},marker:{size:nodes.map(n=>n.ptSize),color:nodes.map(n=>n.fillColor),line:{color:'white',width:2},opacity:0.92},customdata:nodes.map(n=>n.customdata),hovertext:nodes.map(n=>n.hoverText),hoverinfo:'text',showlegend:false});
+  traces.push({type:'scatter',mode:'text',x:nodes.map(n=>n.x),y:nodes.map(n=>n.y),text:nodes.map(n=>n.name),textposition:'bottom center',textfont:{size:9,color:'#2c3e2d',family:'DM Sans,sans-serif'},hoverinfo:'none',showlegend:false});
   return traces;
 }
 
-const baseLayout = {
-  xaxis:{visible:false,fixedrange:false},
-  yaxis:{visible:false,fixedrange:false,scaleanchor:'x'},
-  paper_bgcolor:'#f4f8f4',plot_bgcolor:'#f4f8f4',
-  margin:{l:20,r:20,t:20,b:20}
-};
+const baseLayout={xaxis:{visible:false,fixedrange:false},yaxis:{visible:false,fixedrange:false,scaleanchor:'x'},paper_bgcolor:'#f4f8f4',plot_bgcolor:'#f4f8f4',margin:{l:20,r:20,t:20,b:20}};
+const config={responsive:true,displayModeBar:true,modeBarButtonsToRemove:['toImage','sendDataToCloud','editInChartStudio'],displaylogo:false};
 
-const config={responsive:true,displayModeBar:true,
-  modeBarButtonsToRemove:['toImage','sendDataToCloud','editInChartStudio'],
-  displaylogo:false};
-
-// ════════════════════════════════════════════════════════
-// Render helpers
-// ════════════════════════════════════════════════════════
-let currentRows = null;
-let currentCollege = null;
-
-function drawCollege(rows) {
-  const {nodes,edges,groups} = buildCollegeView(rows);
-  const traces = buildTraces(nodes,edges);
-  Plotly.react('chart', traces, baseLayout, config);
-  currentCollege = null;
-
+// ── Render map ────────────────────────────────────────
+function drawCollege(rows){
+  const{nodes,edges}=buildCollegeView(rows);
+  Plotly.react('chart',buildTraces(nodes,edges),baseLayout,config);
+  currentCollege=null;
   document.getElementById('back-btn').style.display='none';
   document.getElementById('bc-text').innerHTML='All Colleges &amp; Centers';
   document.getElementById('legend').style.display='block';
   document.getElementById('empty-state').style.display='none';
-
-  document.getElementById('chart').on('plotly_click', data=>{
+  document.getElementById('chart').on('plotly_click',data=>{
     const pt=data.points[0];
-    if(!pt||!pt.customdata) return;
-    const cg=pt.customdata;
-    if(cg==='Ballard Center') return;
-    drawDept(rows,cg);
+    if(!pt||!pt.customdata)return;
+    if(pt.customdata==='Ballard Center')return;
+    drawDept(rows,pt.customdata);
   });
 }
 
-function drawDept(rows,cname) {
+function drawDept(rows,cname){
   const dv=buildDeptView(rows,cname);
-  if(!dv) return;
-  const traces=buildTraces(dv.nodes,dv.edges);
-  Plotly.react('chart',traces,{...baseLayout,
-    paper_bgcolor:'#f4f8f4',plot_bgcolor:'#f4f8f4'},config);
+  if(!dv)return;
+  Plotly.react('chart',buildTraces(dv.nodes,dv.edges),baseLayout,config);
   currentCollege=cname;
-
   document.getElementById('back-btn').style.display='block';
-  document.getElementById('bc-text').innerHTML=
-    `<a href='#' onclick='goBack();return false;'>All Colleges</a> › <span>${cname}</span>`;
+  document.getElementById('bc-text').innerHTML=`<a href='#' onclick='goBack();return false;'>All Colleges</a> › <span>${cname}</span>`;
 }
 
-function goBack() {
-  if(currentRows) drawCollege(currentRows);
-}
+function goBack(){if(currentRows)drawCollege(currentRows);}
 
-// ════════════════════════════════════════════════════════
-// Semester panel
-// ════════════════════════════════════════════════════════
-function renderList() {
+// ── Semester list ─────────────────────────────────────
+function renderList(){
   const list=document.getElementById('semester-list');
   list.innerHTML='';
-  if(!semesters.length) {
-    list.innerHTML='<div style="padding:10px 10px;font-size:0.72rem;color:rgba(255,255,255,0.3)">No semesters yet</div>';
-    return;
-  }
+  if(!semesters.length){list.innerHTML='<div style="padding:10px 10px;font-size:0.72rem;color:rgba(255,255,255,0.3)">No semesters yet</div>';return;}
   semesters.forEach((sem,idx)=>{
     const div=document.createElement('div');
     div.className='sem-item'+(activeSemId===sem.id?' active':'');
@@ -650,16 +376,17 @@ function renderList() {
     div.innerHTML=`
       <span class="drag-handle" title="Drag to reorder">⠿</span>
       <div class="sem-info">
-        <div class="sem-name" ondblclick="openRename('${sem.id}')" title="Double-click to rename">${sem.name}</div>
-        <div class="sem-meta">${sem.data.length} orgs · ${sem.uploadedAt}</div>
+        <div class="sem-name">${sem.name}</div>
+        <div class="sem-meta">${(sem.data||[]).length} orgs · ${sem.uploaded_at}</div>
       </div>
-      <button class="sem-delete" onclick="deleteSem('${sem.id}',event)" title="Remove">✕</button>
-    `;
-    div.addEventListener('click',(e)=>{
-      if(e.target.classList.contains('sem-delete')||e.target.classList.contains('drag-handle')) return;
+      <div class="sem-actions">
+        <button class="sem-btn" onclick="openRename('${sem.id}',event)" title="Rename">✏</button>
+        <button class="sem-btn del" onclick="deleteSem('${sem.id}',event)" title="Delete">✕</button>
+      </div>`;
+    div.addEventListener('click',e=>{
+      if(e.target.classList.contains('sem-btn')||e.target.classList.contains('drag-handle'))return;
       loadSem(sem.id);
     });
-    // Drag events
     div.addEventListener('dragstart',e=>{dragSrcIdx=idx;div.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
     div.addEventListener('dragend',()=>{div.classList.remove('dragging');document.querySelectorAll('.sem-item').forEach(d=>d.classList.remove('drag-over'));});
     div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
@@ -667,19 +394,19 @@ function renderList() {
     div.addEventListener('drop',e=>{
       e.preventDefault();div.classList.remove('drag-over');
       const destIdx=parseInt(div.dataset.idx);
-      if(dragSrcIdx===null||dragSrcIdx===destIdx) return;
+      if(dragSrcIdx===null||dragSrcIdx===destIdx)return;
       const moved=semesters.splice(dragSrcIdx,1)[0];
       semesters.splice(destIdx,0,moved);
       dragSrcIdx=null;
-      save(); renderList();
+      renderList();
     });
     list.appendChild(div);
   });
 }
 
-function loadSem(id) {
+function loadSem(id){
   const sem=semesters.find(s=>s.id===id);
-  if(!sem) return;
+  if(!sem)return;
   activeSemId=id;
   currentRows=sem.data;
   document.getElementById('current-title').textContent=sem.name;
@@ -687,94 +414,77 @@ function loadSem(id) {
   renderList();
 }
 
-function deleteSem(id,e) {
+async function deleteSem(id,e){
   e.stopPropagation();
-  if(!confirm('Remove this semester?')) return;
-  semesters=semesters.filter(s=>s.id!==id);
-  if(activeSemId===id) {
-    activeSemId=null; currentRows=null;
+  if(!confirm('Remove this semester for everyone?'))return;
+  setStatus('Deleting...','syncing');
+  const{error}=await db.from('semesters').delete().eq('id',id);
+  if(error){setStatus('Delete failed','error');return;}
+  if(activeSemId===id){
+    activeSemId=null;currentRows=null;
     document.getElementById('current-title').textContent='No semester loaded';
     document.getElementById('chart').innerHTML='';
     document.getElementById('empty-state').style.display='flex';
     document.getElementById('legend').style.display='none';
   }
-  save(); renderList();
 }
 
-// ════════════════════════════════════════════════════════
-// Rename
-// ════════════════════════════════════════════════════════
-function openRename(id) {
+// ── Rename ────────────────────────────────────────────
+function openRename(id,e){
+  if(e)e.stopPropagation();
   renameTarget=id;
   const sem=semesters.find(s=>s.id===id);
   document.getElementById('rename-input').value=sem?sem.name:'';
   document.getElementById('rename-modal').classList.add('open');
-  document.getElementById('rename-input').focus();
+  setTimeout(()=>document.getElementById('rename-input').focus(),50);
 }
-function closeRename() { document.getElementById('rename-modal').classList.remove('open'); renameTarget=null; }
-function saveRename() {
-  if(!renameTarget) return;
+function closeRename(){document.getElementById('rename-modal').classList.remove('open');renameTarget=null;}
+async function saveRename(){
+  if(!renameTarget)return;
   const val=document.getElementById('rename-input').value.trim();
-  if(!val) return;
-  const sem=semesters.find(s=>s.id===renameTarget);
-  if(sem) { sem.name=val; if(activeSemId===renameTarget) document.getElementById('current-title').textContent=val; }
-  save(); renderList(); closeRename();
+  if(!val)return;
+  setStatus('Saving...','syncing');
+  const{error}=await db.from('semesters').update({name:val}).eq('id',renameTarget);
+  if(error){setStatus('Save failed','error');return;}
+  closeRename();
 }
-document.getElementById('rename-input').addEventListener('keydown',e=>{ if(e.key==='Enter') saveRename(); if(e.key==='Escape') closeRename(); });
-document.getElementById('rename-modal').addEventListener('click',e=>{ if(e.target===document.getElementById('rename-modal')) closeRename(); });
+document.getElementById('rename-input').addEventListener('keydown',e=>{if(e.key==='Enter')saveRename();if(e.key==='Escape')closeRename();});
+document.getElementById('rename-modal').addEventListener('click',e=>{if(e.target===document.getElementById('rename-modal'))closeRename();});
 
-// ════════════════════════════════════════════════════════
-// File upload
-// ════════════════════════════════════════════════════════
-function guessName(filename) {
-  const f=filename.replace(/\.csv$/i,'').replace(/_/g,' ').replace(/-/g,' ');
-  // Try to detect semester pattern like "Fall 2024" or "Winter_2025"
+// ── File upload ───────────────────────────────────────
+function guessName(filename){
+  const f=filename.replace(/\.csv$/i,'').replace(/[_-]/g,' ');
   const m=f.match(/(fall|winter|spring|summer)\s*(\d{4})/i);
-  if(m) return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2];
-  const now=new Date();
-  const mo=now.getMonth();
+  if(m)return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase()+' '+m[2];
+  const now=new Date(),mo=now.getMonth();
   const sem=mo<4?'Winter':mo<7?'Spring':mo<9?'Summer':'Fall';
-  return `${sem} ${now.getFullYear()}`;
+  return`${sem} ${now.getFullYear()}`;
 }
 
-function handleFiles(files) {
-  Array.from(files).forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const rows=parseCSV(e.target.result);
-      if(!rows.length){alert('Could not parse '+file.name+'. Make sure column order matches the template.');return;}
-      const id='sem_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-      const name=guessName(file.name);
-      const d=new Date();
-      const uploadedAt=d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-      semesters.push({id,name,uploadedAt,data:rows});
-      save();
-      renderList();
-      loadSem(id);
-    };
-    reader.readAsText(file);
-  });
+async function handleFiles(files){
+  for(const file of Array.from(files)){
+    const text=await file.text();
+    const rows=parseCSV(text);
+    if(!rows.length){alert('Could not parse '+file.name+'. Check that column order matches the template.');continue;}
+    const id='sem_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    const name=guessName(file.name);
+    const now=new Date();
+    const uploaded_at=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    setStatus('Uploading...','syncing');
+    const{error}=await db.from('semesters').insert({id,name,uploaded_at,data:rows});
+    if(error){setStatus('Upload failed','error');console.error(error);continue;}
+  }
 }
 
 document.getElementById('csv-input').addEventListener('change',e=>handleFiles(e.target.files));
-
 const uz=document.getElementById('upload-zone');
 uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag-active');});
 uz.addEventListener('dragleave',()=>uz.classList.remove('drag-active'));
-uz.addEventListener('drop',e=>{
-  e.preventDefault();uz.classList.remove('drag-active');
-  handleFiles(e.dataTransfer.files);
-});
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag-active');handleFiles(e.dataTransfer.files);});
 
-// ════════════════════════════════════════════════════════
-// Init
-// ════════════════════════════════════════════════════════
-renderList();
-if(semesters.length) {
-  loadSem(semesters[semesters.length-1].id);
-} else {
-  document.getElementById('empty-state').style.display='flex';
-}
+// ── Init ──────────────────────────────────────────────
+document.getElementById('empty-state').style.display='flex';
+loadFromDB();
 </script>
 </body>
 </html>
